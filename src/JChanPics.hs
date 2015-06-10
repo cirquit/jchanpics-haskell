@@ -55,10 +55,12 @@ downloadImageTo fp board (name, extention) = do
     B.writeFile (fp ++ "/" ++ (show name) ++ extention) res
     putStrLn $ "Saved " ++ fp ++ "/" ++ (show name) ++ extention
 
-jsonAction :: String   -- board to fetch from (f.e "g")
+downloadBoard :: String   -- board to fetch from (f.e "g")
            -> FilePath -- path to folder
+           -> Int         -- from page (inclusive)
+           -> Int         -- to   page (inclusive)
            -> IO ()
-jsonAction board fp = do
+downloadBoard board fp from to= do
 
     hSetBuffering stdout NoBuffering
 
@@ -70,10 +72,10 @@ jsonAction board fp = do
          (Left err,_)        -> putStrLn err
          (Right pages, True) -> do
 
-             let pageCount | board == "b" = [1..9]
-                           | otherwise    = [1..10]
+           --  let pageCount | board == "b" = [1..9]
+           --                | otherwise    = [1..10]
 
-             let threadIds  = concatMap (\x -> getPageThreads x pages) [1..10]
+             let threadIds  = concatMap (\x -> getPageThreads x pages) [from..to]
                  threadIds' = drop 1 threadIds -- remove the sticky
              putStrLn "Fetched current information about threads..."
              threads <- forM threadIds' (getThreadByID board)
@@ -82,14 +84,23 @@ jsonAction board fp = do
              putStrLn "Done converting threads to img-urls.."
              parallel_ (map (downloadImageTo fp board) urlist) >> stopGlobalPool
 
+
+intReads :: String -> [(Int, String)]
+intReads = reads
+
+validRange :: String -> String -> (Bool, Int, Int)
+validRange x y = case (intReads x, intReads y) of
+                     ([(x',[])], [(y', [])]) | x' <= y', x' >= 1, y' <= 10 -> (True, x', y')
+                     _                                                 -> (False, 0, 0)
+
 main :: IO()
 main = do
     args <- getArgs
     case args of
-      ["-board", board, "-to", to] -> do
+      ["-board", board, "-to", to, "-range", x, y] | (True, x', y') <- validRange x y -> do
           createDirectoryIfMissing True to
-          jsonAction board to
+          downloadBoard board to x' y'
       _            -> do
         name <- getProgName
         putStrLn "How to use:"
-        putStrLn $ "./" ++ name ++ " -board <4chanboard> -to <folder>"
+        putStrLn $ "./" ++ name ++ " -board <4chanboard> -to <folder> -range <from page as int> <to page as int>"

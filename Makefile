@@ -1,5 +1,5 @@
 CC = ghc
-OÚT = -o bin/jpchan
+OUT = -o bin/jpchan
 CFLAGS = -O2
 
 

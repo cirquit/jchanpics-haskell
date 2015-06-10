@@ -11,11 +11,13 @@
 
 #### Usage:
 
- `./<your program name> -board <4chan board> -to <filepath to save content to>`
+ * `./<your program name> -board <4chan board> -to <filepath to save content to> -range <page from in int> <page to in int>`
+
+ * The pages are inclusive, so `-range 1 2` is going to download page 1 AND 2
 
 #### Example:
 
- `./jpchan -board g -to ../lib/gcontent`
+ `./jpchan -board g -to ../lib/gcontent -range 1 2`
 
 #### TODO:
 
