@@ -62,8 +62,6 @@ downloadBoard :: String   -- board to fetch from (f.e "g")
            -> IO ()
 downloadBoard board fp from to= do
 
-    hSetBuffering stdout NoBuffering
-
     let validBoard = board `elem` allBoards
     res <- (eitherDecode <$> simpleHttp ("http://a.4cdn.org/" ++ board ++ "/threads.json")) :: IO (Either String [Page])
 
@@ -88,19 +86,52 @@ downloadBoard board fp from to= do
 intReads :: String -> [(Int, String)]
 intReads = reads
 
+integerReads :: String -> [(Integer, String)]
+integerReads = reads
+
 validRange :: String -> String -> (Bool, Int, Int)
 validRange x y = case (intReads x, intReads y) of
                      ([(x',[])], [(y', [])]) | x' <= y', x' >= 1, y' <= 10 -> (True, x', y')
                      _                                                 -> (False, 0, 0)
+
+downloadThread :: String    -- board
+               -> FilePath  -- path to folder
+               -> Integer   -- Threadnumber
+               -> IO ()
+downloadThread board filepath threadnr = do
+    let validBoard = board `elem` allBoards
+    res <- (eitherDecode <$> simpleHttp ("http://a.4cdn.org/" ++ board ++ "/threads.json")) :: IO (Either String [Page])
+    case (res, validBoard) of
+         (_, False)          -> putStrLn "Sorry, this board can't be found..."
+         (Left err,_)        -> putStrLn err
+         (Right pages, True) -> do
+
+           putStrLn $ "Fetched information about threads in /" ++ board ++ "/"
+           let threadIds  = concatMap (\x -> getPageThreads x pages) [1..10]
+           case threadnr `elem` threadIds of
+                False -> putStrLn $ "Sorry, this thread does not exist in /" ++ board ++ "/"
+                True  -> do
+                    thread <- getThreadByID board threadnr
+                    let urllist = threadsToUrlList [thread]
+                    mapM_ (downloadImageTo filepath board) urllist
+                    putStrLn "Download done!"
+
 
 main :: IO()
 main = do
     args <- getArgs
     case args of
       ["-board", board, "-to", to, "-range", x, y] | (True, x', y') <- validRange x y -> do
+          hSetBuffering stdout NoBuffering
           createDirectoryIfMissing True to
           downloadBoard board to x' y'
+      ["-board", board, "-to", to, "-thread", x] | [(x' , [])] <- integerReads x -> do
+          hSetBuffering stdout NoBuffering
+          createDirectoryIfMissing True to
+          downloadThread board to x'
       _            -> do
         name <- getProgName
         putStrLn "How to use:"
         putStrLn $ "./" ++ name ++ " -board <4chanboard> -to <folder> -range <from page as int> <to page as int>"
+        putStrLn $ "./" ++ name ++ " -board <4chanboard> -to <folder> -thread <threadnumber as int>"
+

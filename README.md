@@ -15,9 +15,14 @@
 
  * The pages are inclusive, so `-range 1 2` is going to download page 1 AND 2
 
+ * `./<your program name> -board <4chan board> -to <filepath to save content to> -thread <threadid as int>`
+
 #### Example:
 
  `./jpchan -board g -to ../lib/gcontent -range 1 2`
+
+ `./jpchan -board g -to ../lib/gcontent -thread 39894014`
+
 
 #### TODO:
 
