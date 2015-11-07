@@ -26,5 +26,5 @@
 
 #### TODO:
 
- * interface to select threads / pages / boards
+ * interface to select / pages / boards
  * concurrency
